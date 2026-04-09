@@ -242,6 +242,7 @@
 		compatible = "qcom,kaanapali-clk-virt";
 		#interconnect-cells = <2>;
 		qcom,bcm-voters = <&apps_bcm_voter>;
+		status="disabled";
 	};
 
 	mc_virt: interconnect-1 {
@@ -767,7 +768,7 @@
 			#address-cells = <2>;
 			#size-cells = <2>;
 			ranges;
-
+status="disabled";
 			i2c8: i2c@880000 {
 				compatible = "qcom,geni-i2c";
 				reg = <0x0 0x00880000 0x0 0x4000>;
@@ -1238,7 +1239,7 @@
 				      "s-ahb";
 
 			iommus = <&apps_smmu 0xa3 0x0>;
-
+status="disabled";
 			dma-coherent;
 
 			#address-cells = <2>;
@@ -1748,7 +1749,7 @@
 						"sleep",
 						"ping";
 
-			status = "okay";
+			status="disabled";
 
 			glink-edge {
 				interrupts-extended = <&ipcc IPCC_MPROC_SOCCP
@@ -1834,6 +1835,7 @@
 			#clock-cells = <1>;
 			#reset-cells = <1>;
 			#power-domain-cells = <1>;
+					status="disabled";
 		};
 
 		mmss_noc: interconnect@1780000 {
@@ -1841,6 +1843,7 @@
 			reg = <0x0 0x01780000 0x0 0x5b800>;
 			qcom,bcm-voters = <&apps_bcm_voter>;
 			#interconnect-cells = <2>;
+			status="disabled";
 		};
 
 		gpi_dma3: dma-controller@1900000 {
@@ -1871,7 +1874,7 @@
 		qupv3_3: geniqup@19c0000 {
 			compatible = "qcom,geni-se-qup";
 			reg = <0x0 0x019c0000 0x0 0x2000>;
-
+status="disabled";
 			clocks = <&gcc GCC_QUPV3_WRAP_3_M_AHB_CLK>,
 				 <&gcc GCC_QUPV3_WRAP_3_S_AHB_CLK>;
 			clock-names = "m-ahb",
@@ -2220,7 +2223,7 @@
 		qupv3_4: geniqup@1ac0000 {
 			compatible = "qcom,geni-se-qup";
 			reg = <0x0 0x01ac0000 0x0 0x2000>;
-
+status="disabled";
 			clocks = <&gcc GCC_QUPV3_WRAP_4_M_AHB_CLK>,
 				<&gcc GCC_QUPV3_WRAP_4_S_AHB_CLK>;
 			clock-names = "m-ahb",
@@ -2731,7 +2734,6 @@
 					     "cpu-ufs";
 
 			power-domains = <&gcc GCC_UFS_PHY_GDSC>;
-			required-opps = <&rpmhpd_opp_nom>;
 
 			iommus = <&apps_smmu 0x60 0x0>;
 			dma-coherent;
@@ -2758,7 +2760,6 @@
 						 /bits/ 64 <0>,
 						 /bits/ 64 <0>,
 						 /bits/ 64 <0>;
-					required-opps = <&rpmhpd_opp_low_svs_d1>;
 				};
 
 				opp-100000000 {
@@ -2770,7 +2771,6 @@
 						 /bits/ 64 <0>,
 						 /bits/ 64 <0>,
 						 /bits/ 64 <0>;
-					required-opps = <&rpmhpd_opp_low_svs>;
 				};
 
 				opp-403000000 {
@@ -2782,7 +2782,6 @@
 						 /bits/ 64 <0>,
 						 /bits/ 64 <0>,
 						 /bits/ 64 <0>;
-					required-opps = <&rpmhpd_opp_nom>;
 				};
 			};
 		};
@@ -2822,7 +2821,7 @@
 
 			dmas = <&cryptobam 4>, <&cryptobam 5>;
 			dma-names = "rx", "tx";
-
+status="disabled";
 			iommus = <&apps_smmu 0xc0 0x0>,
 				 <&apps_smmu 0xc1 0x0>;
 
@@ -3001,6 +3000,7 @@
 			#clock-cells = <1>;
 			#reset-cells = <1>;
 			#power-domain-cells = <1>;
+					status="disabled";
 		};
 
 		gpu: gpu@3d00000 {
@@ -3025,7 +3025,7 @@
 			interconnects = <&gem_noc MASTER_GFX3D QCOM_ICC_TAG_ALWAYS
 					 &mc_virt SLAVE_EBI1 QCOM_ICC_TAG_ALWAYS>;
 			interconnect-names = "gfx-mem";
-
+			status="disabled";
 			gpu_zap_shader: zap-shader {
 				memory-region = <&gpu_microcode_mem>;
 			};
@@ -3138,6 +3138,7 @@
 					qcom,opp-acd-level = <0x88295ffd>;
 				};
 			};
+
 		};
 
 		gmu: gmu@3d6a000 {
@@ -3171,7 +3172,7 @@
 			qcom,qmp = <&aoss_qmp>;
 
 			operating-points-v2 = <&gmu_opp_table>;
-
+status="disabled";
 			gmu_opp_table: opp-table {
 				compatible = "operating-points-v2";
 
@@ -3209,7 +3210,7 @@
 			power-domains = <&rpmhpd RPMHPD_GFX>,
 					<&rpmhpd RPMHPD_GMXC>,
 					<&gpucc GPU_CC_CX_GDSC>;
-
+status="disabled";
 			#power-domain-cells = <1>;
 		};
 
@@ -3224,6 +3225,7 @@
 			#clock-cells = <1>;
 			#reset-cells = <1>;
 			#power-domain-cells = <1>;
+				 status="disabled";
 		};
 
 		adreno_smmu: iommu@3da0000 {
@@ -3233,7 +3235,7 @@
 			#iommu-cells = <2>;
 			#global-interrupts = <1>;
 			dma-coherent;
-
+status="disabled";
 			power-domains = <&gpucc GPU_CC_CX_GDSC>;
 			interconnects = <&gem_noc MASTER_GPU_TCU QCOM_ICC_TAG_ALWAYS
 					 &mc_virt SLAVE_EBI1 QCOM_ICC_TAG_ALWAYS>;
@@ -4250,6 +4252,7 @@
 			#clock-cells = <1>;
 			#reset-cells = <1>;
 			#power-domain-cells = <1>;
+					status="disabled";
 		};
 
 		mdss: display-subsystem@9800000 {
@@ -4501,7 +4504,7 @@
 
 			power-domains = <&rpmhpd RPMHPD_MMCX>;
 			required-opps = <&rpmhpd_opp_low_svs>;
-
+status="disabled";
 			#clock-cells = <1>;
 			#power-domain-cells = <1>;
 			#reset-cells = <1>;
@@ -4540,7 +4543,6 @@
 					  "ss_phy_irq";
 
 			power-domains = <&gcc GCC_USB30_PRIM_GDSC>;
-			required-opps = <&rpmhpd_opp_nom>;
 
 			resets = <&gcc GCC_USB30_PRIM_BCR>;
 
@@ -5904,6 +5906,7 @@
 			};
 
 			rpmhpd: power-controller {
+				status="disabled";
 				compatible = "qcom,kaanapali-rpmhpd";
 
 				operating-points-v2 = <&rpmhpd_opp_table>;
@@ -6025,6 +6028,7 @@
 			reg = <0x0 0x260c0000 0x0 0x21280>;
 			qcom,bcm-voters = <&apps_bcm_voter>;
 			#interconnect-cells = <2>;
+			status="disabled";
 		};
 
 		remoteproc_cdsp: remoteproc@26300000 {

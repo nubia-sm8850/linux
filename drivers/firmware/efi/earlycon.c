@@ -9,6 +9,7 @@
 #include <linux/io.h>
 #include <linux/kernel.h>
 #include <linux/serial_core.h>
+#include <linux/delay.h>
 #include <linux/screen_info.h>
 #include <linux/string.h>
 

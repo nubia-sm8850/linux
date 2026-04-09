@@ -4,6 +4,20 @@
 #include <dt-bindings/regulator/qcom,rpmh-regulator.h>
 #include "kaanapali.dtsi"
 
+#define PMH0110_D_E0_SID 3
+#define PMH0110_F_E0_SID 5
+#define PMH0110_G_E0_SID 6
+#define PMH0110_I_E0_SID 8
+#define PMH0104_J_E1_SID 9
+
+#include "pmk8850.dtsi"
+#include "pmh0101.dtsi"
+#include "pmh0110.dtsi"
+#include "pmh0104.dtsi"
+
+/delete-node/ &adspslpi_mem;
+/delete-node/ &rmtfs_mem;
+
 / {
 	model = "Nubia Z80 Ultra";
 	compatible = "qcom,canoe-mtp", "qcom,canoe", "qcom,canoep-mtp", "qcom,canoep",
@@ -15,82 +29,25 @@
 		#size-cells = <0x02>;
 		ranges;
 
-		ramoops@E2000000 {
+		adspslpi_mem: adspslpi@a1400000 {
+			reg = <0x0 0xa1400000 0x0 0x4600000>;
+			no-map;
+		};
+
+		ramoops@e2000000 {
 			compatible = "ramoops";
-			reg = <0x00 0xe2000000 0x00 0x200000>;
-			record-size = <0x00>;
+			reg = <0x0 0xe2000000 0x0 0x200000>;
+			record-size = <0x0>;
 			console-size = <0x200000>;
-			ftrace-size = <0x00>;
-			pmsg-size = <0x00>;
+			ftrace-size = <0x0>;
+			pmsg-size = <0x0>;
 		};
 
 		splash_region@fc800000 {
 			reg = <0x00 0xfc800000 0x00 0x2b00000>;
 		};
-
-		hyp_region@80000000 {
-			no-map;
-			reg = <0x00 0x80000000 0x00 0x1400000>;
-		};
-
-		platform_fw_region@81a00000 {
-			no-map;
-			reg = <0x00 0x81a00000 0x00 0xe00000>;
-		};
-
-		dsm_region@84a00000 {
-			no-map;
-			reg = <0x00 0x84a00000 0x00 0x5f80000>;
-		};
-
-		mpss_fw_region@8aa00000 {
-			no-map;
-			reg = <0x00 0x8aa00000 0x00 0xef9c000>;
-		};
-
-		media_fw_region@99600000 {
-			no-map;
-			reg = <0x00 0x99600000 0x00 0x3880000>;
-		};
-
-		spu_spss_region@9fc80000 {
-			no-map;
-			reg = <0x00 0x9fc80000 0x00 0x360000>;
-		};
-
-		dcp_soccp_region@a0050000 {
-			no-map;
-			reg = <0x00 0xa0050000 0x00 0x8c0000>;
-		};
-
-		xbl_sync_region@d7800000 {
-			no-map;
-			reg = <0x00 0xd7800000 0x00 0x400000>;
-		};
-
-		tz_merged_region@d8000000 {
-			no-map;
-			reg = <0x00 0xd8000000 0x00 0x800000>;
-		};
 	};
 
-	framebuffer: framebuffer@fc800000 {
-		compatible = "simple-framebuffer";
-		reg = <0x0 0xfc800000 0x0 0x2b00000>;
-		width = <1216>;
-		height = <2688>;
-		stride = <(1216 * 4)>;
-		format = "a8r8g8b8";
-		status = "okay";
-	};
-
-	aliases {
-		serial0 = &uart7;
-	};
-
-	chosen {
-		stdout-path = "serial0:115200n8";
-	};
 
 	clocks {
 		xo_board: xo-board {
@@ -123,6 +80,17 @@
 			clock-div = <2>;
 		};
 	};
+
+	framebuffer: framebuffer@fc800000 {
+		compatible = "simple-framebuffer";
+		reg = <0x0 0xfc800000 0x0 0x2b00000>;
+		width = <1216>;
+		height = <2688>;
+		stride = <(1216 * 4)>;
+		format = "a8r8g8b8";
+		status = "okay";
+	};
+
 };
 
 &apps_rsc {
@@ -743,11 +711,44 @@
 	};
 };
 
+&pmh0110_d_e0 {
+	status = "okay";
+};
+
+&pmh0110_f_e0 {
+	status = "okay";
+};
+
+&pmh0110_g_e0 {
+	status = "okay";
+};
+
+&pmh0110_i_e0 {
+	status = "okay";
+};
+
+
+&spmi_bus1 {
+	pmih0108: pmic@7 {
+		compatible = "qcom,pmih0108", "qcom,spmi-pmic";
+		reg = <0x7 0>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		pmih0108_eusb2_repeater: phy@fd00 {
+			compatible = "qcom,pm8550b-eusb2-repeater";
+			reg = <0xfd00>;
+			#phy-cells = <0>;
+			vdd18-supply = <&vreg_l15b_1p8>;
+			vdd3-supply = <&vreg_l5b_3p1>;
+		};
+	};
+};
+
 &tlmm {
-	gpio-reserved-ranges = <34 2>, /* NFC eSE SPI */
-			       <75 1>, /* eSE */
-			       <119 2>, /* SoCCP */
-			       <144 4>; /* CXM UART */
+	gpio-reserved-ranges =
+			       <40 4>, /* Sensor? */
+			       <215 1>; /* FP reset */
 };
 
 &ufs_mem_hc {
@@ -764,6 +765,30 @@
 &ufs_mem_phy {
 	vdda-phy-supply = <&vreg_l4g_0p9>;
 	vdda-pll-supply = <&vreg_l1d_1p2>;
+
+	status = "okay";
+};
+
+
+
+&usb_1 {
+	dr_mode = "peripheral";
+
+	status = "okay";
+};
+
+&usb_1_hsphy {
+	vdd-supply = <&vreg_l4f_0p8>;
+	vdda12-supply = <&vreg_l1d_1p2>;
+
+	phys = <&pmih0108_eusb2_repeater>;
+
+	status = "okay";
+};
+
+&usb_dp_qmpphy {
+	vdda-phy-supply = <&vreg_l1d_1p2>;
+	vdda-pll-supply = <&vreg_l4f_0p8>;
 
 	status = "okay";
 };
