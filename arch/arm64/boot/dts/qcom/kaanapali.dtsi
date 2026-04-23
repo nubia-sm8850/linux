@@ -2679,7 +2679,7 @@
 		};
 
 		gpu: gpu@3d00000 {
-			compatible = "qcom,adreno-44050a31", "qcom,adreno";
+			compatible = "qcom,adreno-44050a01", "qcom,adreno";
 			reg = <0x0 0x03d00000 0x0 0x40000>,
 			      <0x0 0x03d9e000 0x0 0x2000>,
 			      <0x0 0x03d61000 0x0 0x800>;
