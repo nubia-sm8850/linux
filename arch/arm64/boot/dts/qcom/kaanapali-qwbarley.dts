@@ -768,6 +768,14 @@
 	status = "okay";
 };
 
+&gpu {
+	status = "okay";
+};
+
+&gpu_zap_shader {
+	firmware-name = "qcom/kaanapali/Nubia/Z80Ultra/gen80200_zap.mbn";
+};
+
 &pmh0101_flash {
 	status = "okay";
 
