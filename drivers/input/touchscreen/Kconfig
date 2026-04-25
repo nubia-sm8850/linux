@@ -398,6 +398,23 @@ config TOUCHSCREEN_GOODIX
 	  To compile this driver as a module, choose M here: the
 	  module will be called goodix.
 
+config TOUCHSCREEN_SYNAPTICS_TCM
+        tristate
+
+config TOUCHSCREEN_SYNAPTICS_TCM_SPI
+        tristate "Synaptics TCM SPI touchscreen"
+        depends on SPI_MASTER
+        select REGMAP
+        select TOUCHSCREEN_SYNAPTICS_TCM
+        help
+          Say Y here if you have a Synaptics TCM IC connected to
+          your system via SPI.
+
+          If unsure, say N.
+
+          To compile this driver as a module, choose M here: the
+          module will be called synaptics_tcm_spi.
+
 config TOUCHSCREEN_GOODIX_BERLIN_CORE
 	tristate
 
