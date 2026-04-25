@@ -149,8 +149,6 @@
 			regulator-allow-set-load;
 			regulator-allowed-modes = <RPMH_REGULATOR_MODE_LPM
 						   RPMH_REGULATOR_MODE_AUTO>;
-			regulator-boot-on;
-			regulator-always-on;
 		};
 
 		vreg_l5b_3p1: ldo5 {
@@ -774,6 +772,26 @@
 
 &gpu_zap_shader {
 	firmware-name = "qcom/kaanapali/Nubia/Z80Ultra/gen80200_zap.mbn";
+};
+
+&spi19 {
+	status = "okay";
+
+	touchscreen@0 {
+		compatible = "synaptics,tcm-spi";
+		reg = <0>;
+		spi-max-frequency = <10000000>;
+
+		interrupt-parent = <&tlmm>;
+		interrupts = <158 IRQ_TYPE_EDGE_FALLING>;
+
+		reset-gpios = <&tlmm 66 GPIO_ACTIVE_LOW>;
+
+		vdd-supply = <&vreg_l4b_1p8>;
+		avdd-supply = <&vreg_l14b_3p2>;
+
+		status = "okay";
+	};
 };
 
 &pmh0101_flash {
