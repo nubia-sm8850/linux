@@ -2701,8 +2701,8 @@
 					qcom,opp-acd-level = <0x882a5ffd>;
 				};
 
-				opp-105000000 {
-					opp-hz = /bits/ 64 <105000000>;
+				opp-1050000000 {
+					opp-hz = /bits/ 64 <1050000000>;
 					opp-level = <RPMH_REGULATOR_LEVEL_TURBO_L1>;
 					opp-peak-kBps = <20832031>;
 					qcom,opp-acd-level = <0x88295ffd>;
