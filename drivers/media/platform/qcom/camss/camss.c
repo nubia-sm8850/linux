@@ -5051,6 +5051,7 @@ static int camss_parse_endpoint_node(struct device *dev,
 	struct csiphy_lanes_cfg *lncfg = &csd->interface.csi2.lane_cfg;
 	struct v4l2_mbus_config_mipi_csi2 *mipi_csi2;
 	struct v4l2_fwnode_endpoint vep = { { 0 } };
+	unsigned int max_lanes;
 	unsigned int i;
 	int ret;
 
@@ -5084,10 +5085,20 @@ static int camss_parse_endpoint_node(struct device *dev,
 	if (!lncfg->data)
 		return -ENOMEM;
 
+	/* C-PHY: up to three trios, no clock lane */
+	max_lanes = MSM_CSIPHY_MAX_DATA_LANE;
+	if (lncfg->phy_cfg == V4L2_MBUS_CSI2_CPHY)
+		max_lanes = MSM_CSIPHY_MAX_CPHY_TRIO;
+
+	if (lncfg->num_data > max_lanes) {
+		dev_err(dev, "Invalid data-lanes count %d\n", lncfg->num_data);
+		return -EINVAL;
+	}
+
 	for (i = 0; i < lncfg->num_data; i++) {
 		u8 lane = mipi_csi2->data_lanes[i];
 
-		if (lane < lane_base || lane - lane_base >= MSM_CSIPHY_MAX_DATA_LANE) {
+		if (lane < lane_base || lane - lane_base >= max_lanes) {
 			dev_err(dev, "invalid data-lane %u\n", lane);
 			return -EINVAL;
 		}
@@ -5160,6 +5171,13 @@ static int camss_parse_ports(struct camss *camss)
 		ret = camss_parse_endpoint_node(dev, ep, csd, lane_base);
 		if (ret < 0)
 			goto err_cleanup;
+
+		if (csd->interface.csi2.lane_cfg.phy_cfg == V4L2_MBUS_CSI2_CPHY &&
+		    camss->legacy_phy) {
+			dev_err(dev, "C-PHY requires a CSI2 PHY device\n");
+			ret = -EINVAL;
+			goto err_cleanup;
+		}
 	}
 
 	return 0;
