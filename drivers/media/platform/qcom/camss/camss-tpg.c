@@ -489,6 +489,7 @@ int msm_tpg_register_entity(struct tpg_device *tpg,
 
 	tpg->pad.flags = MEDIA_PAD_FL_SOURCE;
 
+	sd->entity.function = MEDIA_ENT_F_CAM_SENSOR;
 	sd->entity.ops = &tpg_media_ops;
 	ret = media_entity_pads_init(&sd->entity, 1, &tpg->pad);
 	if (ret < 0) {
