@@ -20240,6 +20240,14 @@ T:	git git://linuxtv.org/media.git
 F:	Documentation/devicetree/bindings/media/i2c/ovti,ov4689.yaml
 F:	drivers/media/i2c/ov4689.c
 
+OMNIVISION OV50H40 SENSOR DRIVER
+M:	Luka Panio <lukapanio@gmail.com>
+L:	linux-media@vger.kernel.org
+S:	Maintained
+T:	git git://linuxtv.org/media.git
+F:	Documentation/devicetree/bindings/media/i2c/ovti,ov50h40.yaml
+F:	drivers/media/i2c/ov50h40.c
+
 OMNIVISION OV5640 SENSOR DRIVER
 M:	Steve Longerbeam <slongerbeam@gmail.com>
 L:	linux-media@vger.kernel.org
