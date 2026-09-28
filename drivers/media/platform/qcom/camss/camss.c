@@ -32,6 +32,17 @@
 #define CAMSS_CLOCK_MARGIN_NUMERATOR 105
 #define CAMSS_CLOCK_MARGIN_DENOMINATOR 100
 
+/*
+ * Documentation/driver-api/media/tx-rx.rst:
+ *   pixel_rate = link_freq * 2 * nr_of_lanes * 16 / k / bits_per_sample
+ * with k = 16 for D-PHY and k = 7 for C-PHY (16 bits in 7 symbols).
+ * When only V4L2_CID_PIXEL_RATE is available:
+ *   link_freq = pixel_rate * bits_per_sample * k / (2 * nr_of_lanes * 16)
+ */
+#define CAMSS_PHY_LINK_FREQ_DIV		(2 * 16)
+#define CAMSS_CPHY_K			7
+#define CAMSS_DPHY_K			16
+
 static const struct parent_dev_ops vfe_parent_dev_ops;
 
 static const struct camss_subdev_resources csiphy_res_kaanapali[] = {
@@ -4912,20 +4923,23 @@ struct media_pad *camss_find_sensor_pad(struct media_entity *entity)
  * camss_get_link_freq - Get link frequency from sensor
  * @entity: Media entity in the current pipeline
  * @bpp: Number of bits per pixel for the current format
- * @lanes: Number of lanes in the link to the sensor
+ * @lanes: Number of lanes (D-PHY) or trios (C-PHY) in the link to the sensor
+ * @cphy: The link uses C-PHY
  *
  * Return link frequency on success or a negative error code otherwise
  */
 s64 camss_get_link_freq(struct media_entity *entity, unsigned int bpp,
-			unsigned int lanes)
+			unsigned int lanes, bool cphy)
 {
+	unsigned int mul = bpp * (cphy ? CAMSS_CPHY_K : CAMSS_DPHY_K);
+	unsigned int div = lanes * CAMSS_PHY_LINK_FREQ_DIV;
 	struct media_pad *sensor_pad;
 
 	sensor_pad = camss_find_sensor_pad(entity);
 	if (!sensor_pad)
 		return -ENODEV;
 
-	return v4l2_get_link_freq(sensor_pad, bpp, 2 * lanes);
+	return v4l2_get_link_freq(sensor_pad, mul, div);
 }
 
 /*
