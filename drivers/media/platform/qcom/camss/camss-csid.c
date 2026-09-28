@@ -1279,6 +1279,7 @@ static int csid_link_setup(struct media_entity *entity,
 			csid->phy.lane_cnt = tpg->res->lane_cnt;
 			csid->phy.csiphy_id = tpg->id;
 			csid->phy.lane_assign = csid_get_lane_assign(NULL, csid->phy.lane_cnt);
+			csid->phy.phy_sel = CSID_PHY_SEL_DPHY;
 			csid->tpg_linked = true;
 		} else {
 			csiphy = v4l2_get_subdevdata(sd);
