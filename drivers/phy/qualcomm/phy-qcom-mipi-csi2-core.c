@@ -13,6 +13,7 @@
 #include <linux/of.h>
 #include <linux/pm_opp.h>
 #include <linux/phy/phy.h>
+#include <linux/phy/phy-mipi-cphy.h>
 #include <linux/phy/phy-mipi-dphy.h>
 #include <linux/platform_device.h>
 #include <linux/pm_domain.h>
@@ -24,12 +25,29 @@
 
 #include "phy-qcom-mipi-csi2.h"
 
+/*
+ * Rate the CSIPHY core (RX) clock has to run at: the D-PHY byte clock
+ * (link_freq / 4), or for C-PHY the word clock of one 16 bit word per
+ * 7 symbols, divided further on PHYs running the RX path at half rate.
+ */
+static unsigned long
+phy_qcom_mipi_csi2_rx_clk_rate(struct mipi_csi2phy_device *csi2phy)
+{
+	const struct mipi_csi2phy_cphy_regs *cphy = csi2phy->soc_cfg->reg_info.cphy;
+	struct mipi_csi2phy_stream_cfg *cfg = &csi2phy->stream_cfg;
+
+	if (cfg->bus_type == MEDIA_BUS_TYPE_CSI2_CPHY)
+		return div_u64(cfg->symbol_rate, cphy->rx_clk_div);
+
+	return cfg->link_freq / 4;
+}
+
 static int
 phy_qcom_mipi_csi2_set_clock_rates(struct mipi_csi2phy_device *csi2phy,
-				   s64 link_freq)
+				   unsigned long rx_rate)
 {
 	struct device *dev = csi2phy->dev;
-	unsigned long opp_rate = link_freq / 4;
+	unsigned long opp_rate = rx_rate;
 	struct dev_pm_opp *opp;
 	long timer_rate;
 	int i, pstate;
@@ -37,8 +55,8 @@ phy_qcom_mipi_csi2_set_clock_rates(struct mipi_csi2phy_device *csi2phy,
 
 	opp = dev_pm_opp_find_freq_ceil(dev, &opp_rate);
 	if (IS_ERR(opp)) {
-		dev_err(csi2phy->dev, "Couldn't find ceiling for %lld Hz\n",
-			link_freq);
+		dev_err(csi2phy->dev, "Couldn't find ceiling for %lu Hz\n",
+			rx_rate);
 		return PTR_ERR(opp);
 	}
 
@@ -68,7 +86,7 @@ phy_qcom_mipi_csi2_set_clock_rates(struct mipi_csi2phy_device *csi2phy,
 		goto unset_opp_rate;
 	}
 
-	timer_rate = clk_round_rate(csi2phy->timer_clk, link_freq / 4);
+	timer_rate = clk_round_rate(csi2phy->timer_clk, rx_rate);
 	if (timer_rate <= 0) {
 		ret = -ENODEV;
 		goto unset_opp_rate;
@@ -96,6 +114,26 @@ unset_pstate:
 	return ret;
 }
 
+static int phy_qcom_mipi_csi2_configure_cphy(struct mipi_csi2phy_device *csi2phy,
+					     struct phy_configure_opts_mipi_cphy *cphy_cfg)
+{
+	struct mipi_csi2phy_stream_cfg *stream_cfg = &csi2phy->stream_cfg;
+	int ret;
+
+	ret = phy_mipi_cphy_config_validate(cphy_cfg);
+	if (ret)
+		return ret;
+
+	if (cphy_cfg->lanes != stream_cfg->num_data_lanes)
+		return -EINVAL;
+
+	stream_cfg->symbol_rate = cphy_cfg->hs_symbol_rate;
+	stream_cfg->t3_prepare = cphy_cfg->t3_prepare;
+	stream_cfg->t3_preamble = cphy_cfg->t3_preamble;
+
+	return 0;
+}
+
 static int phy_qcom_mipi_csi2_configure(struct phy *phy,
 					union phy_configure_opts *opts)
 {
@@ -103,6 +141,14 @@ static int phy_qcom_mipi_csi2_configure(struct phy *phy,
 	struct phy_configure_opts_mipi_dphy *dphy_cfg = &opts->mipi_dphy;
 	struct mipi_csi2phy_stream_cfg *stream_cfg = &csi2phy->stream_cfg;
 	int ret;
+
+	if (stream_cfg->bus_type == MEDIA_BUS_TYPE_CSI2_CPHY) {
+		/* opts->mipi_cphy is only valid once C-PHY mode was selected */
+		if (csi2phy->phy_mode != PHY_MODE_MIPI_CPHY)
+			return -EINVAL;
+
+		return phy_qcom_mipi_csi2_configure_cphy(csi2phy, &opts->mipi_cphy);
+	}
 
 	ret = phy_mipi_dphy_config_validate(dphy_cfg);
 	if (ret)
@@ -123,9 +169,21 @@ static int phy_qcom_mipi_csi2_set_mode(struct phy *phy,
 				       enum phy_mode mode, int submode)
 {
 	struct mipi_csi2phy_device *csi2phy = phy_get_drvdata(phy);
+	u32 bus_type = csi2phy->stream_cfg.bus_type;
 
-	if (mode != PHY_MODE_MIPI_DPHY)
+	/* The consumer must agree with the bus-type of the PHY's sensor port */
+	switch (mode) {
+	case PHY_MODE_MIPI_DPHY:
+		if (bus_type != MEDIA_BUS_TYPE_CSI2_DPHY)
+			return -EINVAL;
+		break;
+	case PHY_MODE_MIPI_CPHY:
+		if (bus_type != MEDIA_BUS_TYPE_CSI2_CPHY)
+			return -EINVAL;
+		break;
+	default:
 		return -EOPNOTSUPP;
+	}
 
 	csi2phy->phy_mode = mode;
 	return 0;
@@ -146,7 +204,8 @@ static int phy_qcom_mipi_csi2_power_on(struct phy *phy)
 	if (ret < 0)
 		goto disable_regulators;
 
-	ret = phy_qcom_mipi_csi2_set_clock_rates(csi2phy, csi2phy->stream_cfg.link_freq);
+	ret = phy_qcom_mipi_csi2_set_clock_rates(csi2phy,
+						 phy_qcom_mipi_csi2_rx_clk_rate(csi2phy));
 	if (ret)
 		goto poweroff_phy;
 
@@ -258,6 +317,7 @@ static int phy_qcom_mipi_csi2_parse_routing(struct mipi_csi2phy_device *csi2phy)
 	struct fwnode_handle *ep;
 	int num_polarities;
 	int num_data_lanes;
+	int max_lanes;
 	u32 bus_type;
 	int i, ret;
 
@@ -278,14 +338,25 @@ static int phy_qcom_mipi_csi2_parse_routing(struct mipi_csi2phy_device *csi2phy)
 	bus_type = MEDIA_BUS_TYPE_CSI2_DPHY;
 	fwnode_property_read_u32(ep, "bus-type", &bus_type);
 
-	if (bus_type != MEDIA_BUS_TYPE_CSI2_DPHY) {
+	switch (bus_type) {
+	case MEDIA_BUS_TYPE_CSI2_DPHY:
+		max_lanes = CSI2_MAX_DATA_LANES;
+		break;
+	case MEDIA_BUS_TYPE_CSI2_CPHY:
+		if (csi2phy->soc_cfg->reg_info.cphy) {
+			max_lanes = CSI2_MAX_CPHY_TRIOS;
+			break;
+		}
+		fallthrough;
+	default:
 		ret = -EOPNOTSUPP;
 		dev_err(dev, "Unsupported bus-type %u\n", bus_type);
 		goto out_put;
 	}
+	stream_cfg->bus_type = bus_type;
 
 	num_data_lanes = fwnode_property_count_u32(ep, "data-lanes");
-	if (num_data_lanes < 1 || num_data_lanes > CSI2_MAX_DATA_LANES) {
+	if (num_data_lanes < 1 || num_data_lanes > max_lanes) {
 		ret = -EINVAL;
 		dev_err(dev, "Invalid data-lanes count: %d\n", num_data_lanes);
 		goto out_put;
@@ -302,6 +373,12 @@ static int phy_qcom_mipi_csi2_parse_routing(struct mipi_csi2phy_device *csi2phy)
 	/* lane-polarities: optional, up to num_data_lanes + 1 entries */
 	memset(lane_polarities, 0x00, sizeof(lane_polarities));
 	num_polarities = fwnode_property_count_u32(ep, "lane-polarities");
+	if (num_polarities > 0 && bus_type == MEDIA_BUS_TYPE_CSI2_CPHY) {
+		ret = -EINVAL;
+		dev_err(dev, "lane-polarities is not supported in C-PHY mode\n");
+		goto out_put;
+	}
+
 	if (num_polarities > 0) {
 		if (num_polarities != stream_cfg->num_data_lanes + 1) {
 			ret = -EINVAL;
@@ -322,7 +399,7 @@ static int phy_qcom_mipi_csi2_parse_routing(struct mipi_csi2phy_device *csi2phy)
 	csi2phy->stream_cfg.lane_cfg.clk.pol = lane_polarities[0];
 
 	for (i = 0; i < csi2phy->stream_cfg.num_data_lanes; i++) {
-		if (data_lanes[i] < 1 || data_lanes[i] > CSI2_MAX_DATA_LANES) {
+		if (data_lanes[i] < 1 || data_lanes[i] > max_lanes) {
 			dev_err(dev, "Invalid lane %d\n", data_lanes[i]);
 			ret = -EINVAL;
 			goto out_put;

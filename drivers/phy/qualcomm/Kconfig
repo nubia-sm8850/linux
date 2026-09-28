@@ -36,6 +36,7 @@ config PHY_QCOM_MIPI_CSI2
 	depends on PM_OPP
 	depends on COMMON_CLK
 	select GENERIC_PHY
+	select GENERIC_PHY_MIPI_CPHY
 	select GENERIC_PHY_MIPI_DPHY
 	help
 	  Enable this to support the MIPI CSI2 PHY driver found in various

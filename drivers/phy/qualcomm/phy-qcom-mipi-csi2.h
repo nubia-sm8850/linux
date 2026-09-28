@@ -11,6 +11,7 @@
 #include <linux/phy/phy.h>
 
 #define CSI2_MAX_DATA_LANES	4
+#define CSI2_MAX_CPHY_TRIOS	3
 #define CSI2_DEFAULT_CLK_LANE	7
 
 struct mipi_csi2phy_lane {
@@ -23,8 +24,22 @@ struct mipi_csi2phy_lanes_cfg {
 	struct mipi_csi2phy_lane clk;
 };
 
+/**
+ * struct mipi_csi2phy_stream_cfg - active link configuration
+ * @bus_type: MEDIA_BUS_TYPE_CSI2_DPHY or MEDIA_BUS_TYPE_CSI2_CPHY, from DT
+ * @link_freq: D-PHY link frequency (Hz)
+ * @symbol_rate: C-PHY per-trio symbol rate (symbols/s)
+ * @t3_prepare: C-PHY T3-PREPARE in ps, 0 if unknown
+ * @t3_preamble: C-PHY preamble duration in ps, 0 if unknown
+ * @num_data_lanes: number of D-PHY data lanes or C-PHY trios
+ * @lane_cfg: lane positions; for C-PHY data[i].pos is the trio index
+ */
 struct mipi_csi2phy_stream_cfg {
+	u32 bus_type;
 	s64 link_freq;
+	u64 symbol_rate;
+	u32 t3_prepare;
+	u32 t3_preamble;
 	u8 num_data_lanes;
 	struct mipi_csi2phy_lanes_cfg lane_cfg;
 };
@@ -47,11 +62,58 @@ struct mipi_csi2phy_lane_regs {
 	const u32 param_type;
 };
 
+#define CSI2_CPHY_RATE_NREGS	10
+
+/**
+ * struct mipi_csi2phy_cphy_rate_regs - data-rate dependent trio settings
+ * @max_msps: highest symbol rate (MS/s) this entry applies to
+ * @val: values for the registers listed in mipi_csi2phy_cphy_regs.rate_offs
+ */
+struct mipi_csi2phy_cphy_rate_regs {
+	u32 max_msps;
+	u8 val[CSI2_CPHY_RATE_NREGS];
+};
+
+/**
+ * struct mipi_csi2phy_cphy_regs - C-PHY (3-phase) programming description
+ * @init_seq: per-trio init sequence, offsets relative to the trio base
+ * @init_seq_size: number of entries in @init_seq
+ * @trio_base: offset of trio 0 (PHY lane 1)
+ * @trio_stride: distance between trios (PHY lanes 1, 3, 5)
+ * @settle_lo: trio offset of settle count bits [7:0]
+ * @settle_hi: trio offset of settle count bits [15:8]
+ * @rate_offs: trio offsets of the data-rate dependent registers
+ * @rates: data-rate tables, sorted by ascending max_msps
+ * @num_rates: number of entries in @rates
+ * @ctrl0: COMMON_CTRL0 value releasing the PHY in 3-phase mode
+ * @ctrl7: COMMON_CTRL7 value
+ * @ctrl35: COMMON_CTRL35 value selecting 3-phase mode
+ * @rx_clk_div: symbol rate to core (RX) clock divider
+ * @default_settle_ps: settle window used when T3 timings are unknown
+ */
+struct mipi_csi2phy_cphy_regs {
+	const struct mipi_csi2phy_lane_regs *init_seq;
+	const int init_seq_size;
+	const u32 trio_base;
+	const u32 trio_stride;
+	const u32 settle_lo;
+	const u32 settle_hi;
+	const u16 *rate_offs;
+	const struct mipi_csi2phy_cphy_rate_regs *rates;
+	const int num_rates;
+	const u8 ctrl0;
+	const u8 ctrl7;
+	const u8 ctrl35;
+	const u32 rx_clk_div;
+	const u32 default_settle_ps;
+};
+
 struct mipi_csi2phy_device_regs {
 	const struct mipi_csi2phy_lane_regs *init_seq;
 	const int lane_array_size;
 	const u32 common_regs_offset;
 	const u32 common_status_offset;
+	const struct mipi_csi2phy_cphy_regs *cphy;
 };
 
 struct mipi_csi2_genpd {
