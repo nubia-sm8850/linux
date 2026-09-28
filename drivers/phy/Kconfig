@@ -46,6 +46,15 @@ config GENERIC_PHY_MIPI_DPHY
 	  Provides a number of helpers a core functions for MIPI D-PHY
 	  drivers to us.
 
+config GENERIC_PHY_MIPI_CPHY
+	bool
+	select GENERIC_PHY
+	help
+	  Generic MIPI C-PHY support.
+
+	  Provides helpers to build and validate MIPI C-PHY configurations
+	  for C-PHY capable drivers.
+
 config PHY_AIROHA_PCIE
 	tristate "Airoha PCIe-PHY Driver"
 	depends on ARCH_AIROHA || COMPILE_TEST
